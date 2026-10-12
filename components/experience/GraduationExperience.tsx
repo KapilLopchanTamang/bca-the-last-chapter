@@ -245,7 +245,7 @@ export default function GraduationExperience() {
           <Canvas
             shadows
             dpr={[1, 1.5]}
-            camera={{ position: [0, 0.45, 5.2], fov: 48, near: 0.1, far: 80 }}
+            camera={{ position: [14, 5.8, 48], fov: 48, near: 0.1, far: 120 }}
             gl={{
               antialias: true,
               alpha: false,

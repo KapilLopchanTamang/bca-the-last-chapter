@@ -2,7 +2,7 @@
 // Everything in this file is easily editable for batch customization.
 
 export interface ChapterTiming {
-  id: 'opening' | 'beginning' | 'classroom' | 'friendships' | 'journey' | 'final' | 'closing';
+  id: 'college' | 'corridor' | 'opening' | 'beginning' | 'classroom' | 'friendships' | 'journey' | 'final' | 'closing';
   title: string;
   subtitle: string;
   startPercent: number; // 0 to 100 percentage of total song duration
@@ -63,16 +63,16 @@ export interface MemoryProjectConfig {
 }
 
 export const MEMORY_CONFIG: MemoryProjectConfig = {
-  collegeName: "Department of Computer Applications",
+  collegeName: "Itahari Namuna College",
   batchName: "BCA Batch 2021 — 2024",
   graduationYear: "2024",
   motto: "Code. Create. Cherish.",
 
   opening: {
-    badge: "GRADUATION FAREWELL MEMORY EXPERIENCE",
-    title: "BCA — THE LAST CHAPTER",
-    subtitle: "Like clouds drifting across the sky, our memories remain forever.",
-    quote: "Some places become memories. Some people become family.\nLike clouds that drifted together, now we journey to new skies.",
+    badge: "ITAHARI NAMUNA COLLEGE • FAREWELL EXPERIENCE",
+    title: "ITAHARI NAMUNA COLLEGE",
+    subtitle: "BCA — THE LAST CHAPTER",
+    quote: "One college. Countless memories. A lifetime of stories.\nLike clouds that drifted together, now we journey to new skies.",
     playButtonText: "REVISIT OUR MEMORIES",
     headphoneNote: "Put on your headphones for the full cinematic experience",
   },
@@ -83,7 +83,7 @@ export const MEMORY_CONFIG: MemoryProjectConfig = {
     quoteLines: [
       "Like clouds (बादल सरि) that drifted together across these unforgettable college years,",
       "To the late nights, the computer labs, the canteen laughter, and friendships that became family.",
-      "Wherever life's winds take each of us, a part of our hearts will always belong here."
+      "Wherever life's winds take each of us, a part of our hearts will always belong to Itahari Namuna College."
     ],
     signatureTitle: "BCA Graduating Batch",
     signatureSub: "Forever a part of our story.",
@@ -100,38 +100,45 @@ export const MEMORY_CONFIG: MemoryProjectConfig = {
   // Chapter timings synchronized with total track duration
   chapterTimings: [
     {
-      id: "opening",
-      title: "Classroom Entrance",
-      subtitle: "The doors open to the past",
+      id: "college",
+      title: "Itahari Namuna College",
+      subtitle: "Where our journey began",
       startPercent: 0,
-      endPercent: 7,
+      endPercent: 8,
+    },
+    {
+      id: "corridor",
+      title: "Entering Campus",
+      subtitle: "Walking through the familiar halls one last time",
+      startPercent: 8,
+      endPercent: 14.5,
     },
     {
       id: "beginning",
       title: "The Beginning",
       subtitle: "Every journey begins somewhere",
-      startPercent: 7,
-      endPercent: 24,
+      startPercent: 14.5,
+      endPercent: 30,
     },
     {
       id: "classroom",
       title: "The Classroom",
       subtitle: "More than lectures. More than code.",
-      startPercent: 24,
-      endPercent: 46,
+      startPercent: 30,
+      endPercent: 50,
     },
     {
       id: "friendships",
       title: "The Friendships",
       subtitle: "Some classmates became lifelong family",
-      startPercent: 46,
-      endPercent: 68,
+      startPercent: 50,
+      endPercent: 70,
     },
     {
       id: "journey",
       title: "The Journey",
       subtitle: "We learned. We built. We grew.",
-      startPercent: 68,
+      startPercent: 70,
       endPercent: 86,
     },
     {
@@ -139,13 +146,13 @@ export const MEMORY_CONFIG: MemoryProjectConfig = {
       title: "The Final Chapter",
       subtitle: "Different paths. One unforgettable story.",
       startPercent: 86,
-      endPercent: 95,
+      endPercent: 94,
     },
     {
       id: "closing",
       title: "Forever Memories",
       subtitle: "The doors close, the memories remain",
-      startPercent: 95,
+      startPercent: 94,
       endPercent: 100,
     },
   ],

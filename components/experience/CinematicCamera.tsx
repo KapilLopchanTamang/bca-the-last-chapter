@@ -12,7 +12,7 @@ interface CinematicCameraProps {
 export function CinematicCamera({ timelineState }: CinematicCameraProps) {
   const { camera } = useThree();
   const mouse = useRef({ x: 0, y: 0 });
-  const lookAtTarget = useRef(new THREE.Vector3(0, 0.45, 0));
+  const lookAtTarget = useRef(new THREE.Vector3(1.0, 5.0, 16));
 
   // Subtle mouse parallax
   React.useEffect(() => {
@@ -35,44 +35,85 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
       return x * x * x * (x * (x * 6 - 15) + 10);
     };
 
-    let targetCamX = 0;
-    let targetCamY = 0.45;
-    let targetCamZ = 5.2;
+    let targetCamX = 14;
+    let targetCamY = 5.8;
+    let targetCamZ = 48;
 
-    let targetLookX = 0;
-    let targetLookY = 0.45;
-    let targetLookZ = 0;
+    let targetLookX = 1.0;
+    let targetLookY = 5.0;
+    let targetLookZ = 16;
 
     const percent = progress * 100;
 
-    if (phase === "INITIAL_ENTRANCE") {
-      // Facing closed entrance with gentle cinematic breath
-      targetCamX = mouse.current.x * 0.18 + Math.sin(t * 0.5) * 0.03;
-      targetCamY = 0.45 + mouse.current.y * 0.1 + Math.cos(t * 0.6) * 0.025;
-      targetCamZ = 5.2;
+    if (phase === "COLLEGE_EXTERIOR") {
+      // SCENE 1 & 2: WIDE ESTABLISHING SHOT & DRONE ORBIT (0% to 8%)
+      if (percent < 4.0) {
+        // Shot A: Wide Establishing View of Itahari Namuna College Building & Logo
+        const driftX = Math.sin(t * 0.35) * 0.35;
+        const driftY = Math.cos(t * 0.4) * 0.2;
+        targetCamX = 14 + mouse.current.x * 0.6 + driftX;
+        targetCamY = 5.8 + mouse.current.y * 0.4 + driftY;
+        targetCamZ = 48;
 
+        targetLookX = 1.0;
+        targetLookY = 5.0;
+        targetLookZ = 16;
+      } else {
+        // Shot B: Graceful Drone Orbit around the front three-quarters
+        const orbitT = smootherstep(4.0, 8.0, percent);
+
+        // Curving arc from [14, 5.8, 48] to [3.5, 3.2, 28]
+        const arcBow = Math.sin(orbitT * Math.PI) * 1.8;
+        targetCamX = THREE.MathUtils.lerp(14, 3.5, orbitT) + arcBow + mouse.current.x * 0.4;
+        targetCamY = THREE.MathUtils.lerp(5.8, 3.2, orbitT) + mouse.current.y * 0.25;
+        targetCamZ = THREE.MathUtils.lerp(48, 28, orbitT);
+
+        // LookAt tracks toward the official college emblem and central entrance
+        targetLookX = THREE.MathUtils.lerp(1.0, 0, orbitT);
+        targetLookY = THREE.MathUtils.lerp(5.0, 3.8, orbitT);
+        targetLookZ = 16;
+      }
+    } else if (phase === "COLLEGE_APPROACH") {
+      // SCENE 3: AERIAL DIVE TOWARD CENTRAL ENTRANCE & LOGO (8% to 11.2%)
+      const diveT = smootherstep(8.0, 11.2, percent);
+
+      // Swoops down from [3.5, 3.2, 28] to [0, 0.45, 17.5] (right in front of entrance)
+      targetCamX = THREE.MathUtils.lerp(3.5, 0, diveT) + mouse.current.x * 0.2 * (1 - diveT);
+      targetCamY = THREE.MathUtils.lerp(3.2, 0.45, diveT) + mouse.current.y * 0.15 * (1 - diveT);
+      targetCamZ = THREE.MathUtils.lerp(28, 17.5, diveT);
+
+      // LookAt transitions from college logo plaque down to open glass entrance breezeway
+      targetLookX = 0;
+      targetLookY = THREE.MathUtils.lerp(3.8, 0.45, diveT);
+      targetLookZ = 16;
+    } else if (phase === "COLLEGE_CORRIDOR") {
+      // SCENE 3 cont: FLY THROUGH ENTRANCE INTO INTERIOR CORRIDOR (11.2% to 13.0%)
+      const corrT = smootherstep(11.2, 13.0, percent);
+
+      // Glides straight down the corridor from Z = 16 down to Z = 5.2
+      targetCamX = mouse.current.x * 0.1 * (1 - corrT);
+      targetCamY = 0.45 + mouse.current.y * 0.08 * (1 - corrT);
+      targetCamZ = THREE.MathUtils.lerp(17.5, 5.2, corrT);
+
+      // LookAt is locked straight ahead on Classroom Door (Room 404 • BCA Batch)
       targetLookX = 0;
       targetLookY = 0.45;
       targetLookZ = 0;
     } else if (phase === "DOOR_OPENING") {
-      // THREE-STAGE CINEMATIC ENTRY
-      // Stage 1 (0% to 1.8%): Anticipatory micro-push while handles turn and doors unlatch
-      // Stage 2 (1.8% to 7.2%): Majestic glide through open doorway as light pours in
-      // Stage 3 (7.2% to 8.0%): Soft cushion settling into memory center stage
+      // SCENE 4: ARRIVE OUTSIDE ROOM 404, DOORS OPEN, CAMERA PUSHES IN (13.0% to 14.5%)
+      const enterT = smootherstep(13.2, 14.5, percent);
 
-      const pushT = smootherstep(1.6, 7.4, percent);
+      // Camera glides through opening doorway from Z = 5.2 to Z = 0.70
+      targetCamX = mouse.current.x * 0.12 * (1 - enterT * 0.5);
+      targetCamY = THREE.MathUtils.lerp(0.45, 0.20, enterT) + mouse.current.y * 0.06;
+      targetCamZ = THREE.MathUtils.lerp(5.2, 0.70, enterT);
 
-      targetCamX = mouse.current.x * 0.12 * (1 - pushT * 0.5);
-      targetCamY = THREE.MathUtils.lerp(0.45, 0.20, pushT) + mouse.current.y * 0.06;
-      targetCamZ = THREE.MathUtils.lerp(5.2, 0.70, pushT);
-
-      // LookAt glides into classroom depth to center spotlight
-      targetLookX = mouse.current.x * 0.05 * pushT;
-      targetLookY = THREE.MathUtils.lerp(0.45, 0.12, pushT);
-      targetLookZ = THREE.MathUtils.lerp(0, -2.2, pushT);
+      // LookAt transitions into center stage where photos will float
+      targetLookX = mouse.current.x * 0.05 * enterT;
+      targetLookY = THREE.MathUtils.lerp(0.45, 0.12, enterT);
+      targetLookZ = THREE.MathUtils.lerp(0, -2.2, enterT);
     } else if (phase === "MEMORIES_ACTIVE") {
-      // Stationed smoothly overlooking the center spotlight where memories float
-      // Organic steadycam breathe
+      // SCENE 5: STEADYCAM OVERLOOKING FLOATING PHOTOGRAPHS (14.5% to 93.0%)
       const breatheX = Math.sin(t * 0.4) * 0.045;
       const breatheY = Math.cos(t * 0.5) * 0.035;
       const breatheZ = Math.sin(t * 0.3) * 0.04;
@@ -86,8 +127,7 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
       targetLookY = 0.12 + mouse.current.y * 0.04;
       targetLookZ = -2.2;
     } else if (phase === "DOOR_CLOSING") {
-      // TWO-STAGE POETIC DEPARTURE:
-      // Lingers briefly on the 36-photo mosaic arc, then glides back out through doorway
+      // SCENE 6: POETIC DEPARTURE RETREAT (93.0% to 98.0%)
       const retreatT = smootherstep(94.0, 97.6, percent);
 
       targetCamX = mouse.current.x * 0.12;
@@ -98,7 +138,7 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
       targetLookY = THREE.MathUtils.lerp(0.12, 0.45, retreatT);
       targetLookZ = THREE.MathUtils.lerp(-2.2, 0, retreatT);
     } else {
-      // FINAL_GRADUATION: Stationed outside closed doors
+      // SCENE 6 cont: FINAL GRADUATION STATIONED OUTSIDE CLOSED DOORS (98% to 100%)
       targetCamX = mouse.current.x * 0.12;
       targetCamY = 0.45 + mouse.current.y * 0.08;
       targetCamZ = 5.2;
@@ -108,27 +148,27 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
       targetLookZ = 0;
     }
 
-    // High precision responsive damping (smooth as butter, zero jitter)
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetCamX, 6.0, delta);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetCamY, 6.0, delta);
-    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetCamZ, 6.0, delta);
+    // High precision responsive damping for buttery smooth motion
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetCamX, 5.5, delta);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetCamY, 5.5, delta);
+    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetCamZ, 5.5, delta);
 
     lookAtTarget.current.x = THREE.MathUtils.damp(
       lookAtTarget.current.x,
       targetLookX,
-      6.0,
+      5.5,
       delta
     );
     lookAtTarget.current.y = THREE.MathUtils.damp(
       lookAtTarget.current.y,
       targetLookY,
-      6.0,
+      5.5,
       delta
     );
     lookAtTarget.current.z = THREE.MathUtils.damp(
       lookAtTarget.current.z,
       targetLookZ,
-      6.0,
+      5.5,
       delta
     );
 

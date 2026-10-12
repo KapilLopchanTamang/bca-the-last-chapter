@@ -41,8 +41,20 @@ export function WebGLFallbackExperience({
         {/* Left Door Panel */}
         <motion.div
           animate={{
-            rotateY: phase === "INITIAL_ENTRANCE" || phase === "FINAL_GRADUATION" ? 0 : -85,
-            x: phase === "INITIAL_ENTRANCE" || phase === "FINAL_GRADUATION" ? 0 : -100,
+            rotateY:
+              phase === "COLLEGE_EXTERIOR" ||
+              phase === "COLLEGE_APPROACH" ||
+              phase === "COLLEGE_CORRIDOR" ||
+              phase === "FINAL_GRADUATION"
+                ? 0
+                : -85,
+            x:
+              phase === "COLLEGE_EXTERIOR" ||
+              phase === "COLLEGE_APPROACH" ||
+              phase === "COLLEGE_CORRIDOR" ||
+              phase === "FINAL_GRADUATION"
+                ? 0
+                : -100,
           }}
           transition={{ duration: 2, ease: "easeInOut" }}
           style={{ transformOrigin: "left center" }}
@@ -54,8 +66,20 @@ export function WebGLFallbackExperience({
         {/* Right Door Panel */}
         <motion.div
           animate={{
-            rotateY: phase === "INITIAL_ENTRANCE" || phase === "FINAL_GRADUATION" ? 0 : 85,
-            x: phase === "INITIAL_ENTRANCE" || phase === "FINAL_GRADUATION" ? 0 : 100,
+            rotateY:
+              phase === "COLLEGE_EXTERIOR" ||
+              phase === "COLLEGE_APPROACH" ||
+              phase === "COLLEGE_CORRIDOR" ||
+              phase === "FINAL_GRADUATION"
+                ? 0
+                : 85,
+            x:
+              phase === "COLLEGE_EXTERIOR" ||
+              phase === "COLLEGE_APPROACH" ||
+              phase === "COLLEGE_CORRIDOR" ||
+              phase === "FINAL_GRADUATION"
+                ? 0
+                : 100,
           }}
           transition={{ duration: 2, ease: "easeInOut" }}
           style={{ transformOrigin: "right center" }}

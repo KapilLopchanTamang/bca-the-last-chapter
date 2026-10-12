@@ -20,13 +20,19 @@ interface LyricSegment {
 const LYRIC_SEGMENTS: LyricSegment[] = [
   {
     startTime: 0,
-    endTime: 25,
-    nepali: "ढोका खुल्छ, विगतका सम्झनाहरू ब्युँझिन्छन्...",
-    english: "The doors swing open, awakening memories of our college days...",
+    endTime: 26,
+    nepali: "इटहरी नमुना कलेज — जहाँबाट हाम्रो यात्रा सुरु भयो...",
+    english: "Itahari Namuna College — where our shared story first began...",
   },
   {
-    startTime: 25,
-    endTime: 55,
+    startTime: 26,
+    endTime: 51,
+    nepali: "कलेजको प्राङ्गण, कोरिडोर, अनि त्यो चिरपरिचित कक्षा कोठा...",
+    english: "Through the campus plaza, corridors, into our cherished classroom...",
+  },
+  {
+    startTime: 51,
+    endTime: 85,
     nepali: "बादल सरि उडिरहेका ती पुराना दिनहरू...",
     english: "Like clouds drifting gently across the endless blue sky...",
   },
