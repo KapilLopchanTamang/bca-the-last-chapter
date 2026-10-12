@@ -18,25 +18,25 @@ export function ClassroomDoor({ doorAngle }: ClassroomDoorProps) {
   useFrame((_, delta) => {
     const liveAngle = TimelineController.getInstance().getLiveState().doorAngle;
     if (leftDoorRef.current) {
-      if (liveAngle === 0 && Math.abs(leftDoorRef.current.rotation.y) < 0.008) {
+      if (liveAngle === 0 && Math.abs(leftDoorRef.current.rotation.y) < 0.004) {
         leftDoorRef.current.rotation.y = 0;
       } else {
         leftDoorRef.current.rotation.y = THREE.MathUtils.damp(
           leftDoorRef.current.rotation.y,
           liveAngle,
-          7,
+          8.5,
           delta
         );
       }
     }
     if (rightDoorRef.current) {
-      if (liveAngle === 0 && Math.abs(rightDoorRef.current.rotation.y) < 0.008) {
+      if (liveAngle === 0 && Math.abs(rightDoorRef.current.rotation.y) < 0.004) {
         rightDoorRef.current.rotation.y = 0;
       } else {
         rightDoorRef.current.rotation.y = THREE.MathUtils.damp(
           rightDoorRef.current.rotation.y,
           -liveAngle,
-          7,
+          8.5,
           delta
         );
       }

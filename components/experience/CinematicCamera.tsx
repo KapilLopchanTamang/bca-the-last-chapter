@@ -12,7 +12,7 @@ interface CinematicCameraProps {
 export function CinematicCamera({ timelineState }: CinematicCameraProps) {
   const { camera } = useThree();
   const mouse = useRef({ x: 0, y: 0 });
-  const lookAtTarget = useRef(new THREE.Vector3(0, 0.4, 0));
+  const lookAtTarget = useRef(new THREE.Vector3(0, 0.45, 0));
 
   // Subtle mouse parallax
   React.useEffect(() => {
@@ -29,73 +29,77 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
     const { phase, progress } = live;
     const t = clock.getElapsedTime();
 
-    // Smootherstep helper
+    // Quintic smootherstep easing (6t^5 - 15t^4 + 10t^3)
     const smootherstep = (edge0: number, edge1: number, val: number) => {
       const x = Math.max(0, Math.min(1, (val - edge0) / (edge1 - edge0)));
       return x * x * x * (x * (x * 6 - 15) + 10);
     };
 
     let targetCamX = 0;
-    let targetCamY = 0.4;
+    let targetCamY = 0.45;
     let targetCamZ = 5.2;
 
     let targetLookX = 0;
-    let targetLookY = 0.4;
+    let targetLookY = 0.45;
     let targetLookZ = 0;
 
     const percent = progress * 100;
 
     if (phase === "INITIAL_ENTRANCE") {
-      // Facing closed entrance with gentle idle float
-      targetCamX = mouse.current.x * 0.2 + Math.sin(t * 0.5) * 0.04;
-      targetCamY = 0.45 + mouse.current.y * 0.12 + Math.cos(t * 0.6) * 0.03;
+      // Facing closed entrance with gentle cinematic breath
+      targetCamX = mouse.current.x * 0.18 + Math.sin(t * 0.5) * 0.03;
+      targetCamY = 0.45 + mouse.current.y * 0.1 + Math.cos(t * 0.6) * 0.025;
       targetCamZ = 5.2;
 
       targetLookX = 0;
       targetLookY = 0.45;
       targetLookZ = 0;
     } else if (phase === "DOOR_OPENING") {
-      // Cinematic dolly-in through the opening doorway
-      const openT = smootherstep(0, 8, percent);
+      // THREE-STAGE CINEMATIC ENTRY
+      // Stage 1 (0% to 1.8%): Anticipatory micro-push while handles turn and doors unlatch
+      // Stage 2 (1.8% to 7.2%): Majestic glide through open doorway as light pours in
+      // Stage 3 (7.2% to 8.0%): Soft cushion settling into memory center stage
 
-      // Camera glides smoothly from Z = 5.2 to Z = 0.7
-      targetCamX = mouse.current.x * 0.15 * (1 - openT * 0.5);
-      targetCamY = THREE.MathUtils.lerp(0.45, 0.22, openT) + mouse.current.y * 0.08;
-      targetCamZ = THREE.MathUtils.lerp(5.2, 0.7, openT);
+      const pushT = smootherstep(1.6, 7.4, percent);
 
-      // LookAt travels from door center into classroom center
-      targetLookX = 0;
-      targetLookY = THREE.MathUtils.lerp(0.45, 0.1, openT);
-      targetLookZ = THREE.MathUtils.lerp(0, -2.2, openT);
+      targetCamX = mouse.current.x * 0.12 * (1 - pushT * 0.5);
+      targetCamY = THREE.MathUtils.lerp(0.45, 0.20, pushT) + mouse.current.y * 0.06;
+      targetCamZ = THREE.MathUtils.lerp(5.2, 0.70, pushT);
+
+      // LookAt glides into classroom depth to center spotlight
+      targetLookX = mouse.current.x * 0.05 * pushT;
+      targetLookY = THREE.MathUtils.lerp(0.45, 0.12, pushT);
+      targetLookZ = THREE.MathUtils.lerp(0, -2.2, pushT);
     } else if (phase === "MEMORIES_ACTIVE") {
-      // Stationed smoothly overlooking the center stage where memories float
+      // Stationed smoothly overlooking the center spotlight where memories float
       // Organic steadycam breathe
-      const breatheX = Math.sin(t * 0.4) * 0.06;
-      const breatheY = Math.cos(t * 0.5) * 0.04;
-      const breatheZ = Math.sin(t * 0.3) * 0.05;
+      const breatheX = Math.sin(t * 0.4) * 0.045;
+      const breatheY = Math.cos(t * 0.5) * 0.035;
+      const breatheZ = Math.sin(t * 0.3) * 0.04;
 
-      targetCamX = mouse.current.x * 0.22 + breatheX;
-      targetCamY = 0.2 + mouse.current.y * 0.12 + breatheY;
-      targetCamZ = 0.7 + breatheZ;
+      targetCamX = mouse.current.x * 0.18 + breatheX;
+      targetCamY = 0.20 + mouse.current.y * 0.1 + breatheY;
+      targetCamZ = 0.70 + breatheZ;
 
-      // Look dead-center where each photo comes to rest
-      targetLookX = mouse.current.x * 0.08;
-      targetLookY = 0.1 + mouse.current.y * 0.05;
+      // Look directly at center stage where each photograph holds spotlight
+      targetLookX = mouse.current.x * 0.06;
+      targetLookY = 0.12 + mouse.current.y * 0.04;
       targetLookZ = -2.2;
     } else if (phase === "DOOR_CLOSING") {
-      // Emotional reverse dolly: gently retreats backwards through the doorway
-      const closeT = smootherstep(93, 98, percent);
+      // TWO-STAGE POETIC DEPARTURE:
+      // Lingers briefly on the 36-photo mosaic arc, then glides back out through doorway
+      const retreatT = smootherstep(94.0, 97.6, percent);
 
-      targetCamX = mouse.current.x * 0.15;
-      targetCamY = THREE.MathUtils.lerp(0.2, 0.45, closeT);
-      targetCamZ = THREE.MathUtils.lerp(0.7, 5.2, closeT);
+      targetCamX = mouse.current.x * 0.12;
+      targetCamY = THREE.MathUtils.lerp(0.20, 0.45, retreatT);
+      targetCamZ = THREE.MathUtils.lerp(0.70, 5.2, retreatT);
 
       targetLookX = 0;
-      targetLookY = THREE.MathUtils.lerp(0.1, 0.45, closeT);
-      targetLookZ = THREE.MathUtils.lerp(-2.2, 0, closeT);
+      targetLookY = THREE.MathUtils.lerp(0.12, 0.45, retreatT);
+      targetLookZ = THREE.MathUtils.lerp(-2.2, 0, retreatT);
     } else {
       // FINAL_GRADUATION: Stationed outside closed doors
-      targetCamX = mouse.current.x * 0.15;
+      targetCamX = mouse.current.x * 0.12;
       targetCamY = 0.45 + mouse.current.y * 0.08;
       targetCamZ = 5.2;
 
@@ -104,27 +108,27 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
       targetLookZ = 0;
     }
 
-    // High precision damping for organic, butter-smooth motion
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetCamX, 4.5, delta);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetCamY, 4.5, delta);
-    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetCamZ, 4.5, delta);
+    // High precision responsive damping (smooth as butter, zero jitter)
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetCamX, 6.0, delta);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetCamY, 6.0, delta);
+    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetCamZ, 6.0, delta);
 
     lookAtTarget.current.x = THREE.MathUtils.damp(
       lookAtTarget.current.x,
       targetLookX,
-      4.5,
+      6.0,
       delta
     );
     lookAtTarget.current.y = THREE.MathUtils.damp(
       lookAtTarget.current.y,
       targetLookY,
-      4.5,
+      6.0,
       delta
     );
     lookAtTarget.current.z = THREE.MathUtils.damp(
       lookAtTarget.current.z,
       targetLookZ,
-      4.5,
+      6.0,
       delta
     );
 

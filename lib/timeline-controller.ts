@@ -78,24 +78,24 @@ export class TimelineController {
       lightIntensity = 0.3;
       memoryStreamProgress = 0;
     } else if (percent < 8) {
-      // Opening doors smoothly (0% to 8%)
+      // Opening doors smoothly (0.8% to 6.8%), camera pushes through (2% to 7.5%)
       phase = "DOOR_OPENING";
-      const openT = smootherstep(0, 8, percent);
-      doorAngle = openT * 1.55; // ~89 degrees
-      lightIntensity = 0.3 + openT * 1.3;
+      const doorOpenT = smootherstep(0.8, 6.8, percent);
+      doorAngle = doorOpenT * 1.54; // ~88 degrees inward swing
+      lightIntensity = 0.3 + doorOpenT * 1.4;
       memoryStreamProgress = 0;
     } else if (percent < 93) {
       // Memory experience active (8% to 93%)
       phase = "MEMORIES_ACTIVE";
-      doorAngle = 1.55;
-      lightIntensity = 1.6;
+      doorAngle = 1.54;
+      lightIntensity = 1.7;
       memoryStreamProgress = (percent - 8) / (93 - 8);
     } else if (percent < 98) {
-      // Closing doors with ultra-smooth deceleration (93% to 98%)
+      // Closing doors (94.6% to 97.8%) after camera smoothly retreats
       phase = "DOOR_CLOSING";
-      const closeT = smootherstep(93, 98, percent);
-      doorAngle = (1 - closeT) * 1.55;
-      lightIntensity = 1.6 - closeT * 1.2;
+      const doorCloseT = smootherstep(94.6, 97.8, percent);
+      doorAngle = (1 - doorCloseT) * 1.54;
+      lightIntensity = 1.7 - doorCloseT * 1.3;
       memoryStreamProgress = 1;
     } else {
       // Final graduation screen
@@ -126,7 +126,7 @@ export class TimelineController {
   public getLiveState(): TimelineState {
     if (typeof window !== "undefined") {
       const audio = AudioController.getInstance();
-      const cur = audio.getCurrentTime();
+      const cur = audio.getContinuousTime();
       const dur = audio.getState().duration;
       return this.calculateState(cur, dur);
     }

@@ -20,6 +20,8 @@ export class AudioController {
   private static instance: AudioController | null = null;
   private audio: HTMLAudioElement | null = null;
   private listeners: Set<AudioStateListener> = new Set();
+  private lastSyncTime: number = 0;
+  private lastAudioTime: number = 0;
   private state: AudioPlayerState = {
     currentTime: 0,
     duration: 354, // fallback if metadata pending
@@ -66,6 +68,8 @@ export class AudioController {
         if (!this.audio) return;
         const cur = this.audio.currentTime;
         const dur = this.audio.duration || this.state.duration || 1;
+        this.lastSyncTime = typeof performance !== "undefined" ? performance.now() : Date.now();
+        this.lastAudioTime = cur;
         this.updateState({
           currentTime: cur,
           progress: Math.min(1, Math.max(0, cur / dur)),
@@ -73,14 +77,24 @@ export class AudioController {
       });
 
       this.audio.addEventListener("play", () => {
+        if (this.audio) {
+          this.lastSyncTime = typeof performance !== "undefined" ? performance.now() : Date.now();
+          this.lastAudioTime = this.audio.currentTime;
+        }
         this.updateState({ isPlaying: true, hasEnded: false });
       });
 
       this.audio.addEventListener("pause", () => {
+        if (this.audio) {
+          this.lastAudioTime = this.audio.currentTime;
+        }
         this.updateState({ isPlaying: false });
       });
 
       this.audio.addEventListener("ended", () => {
+        if (this.audio) {
+          this.lastAudioTime = this.audio.duration || this.state.duration;
+        }
         this.updateState({ isPlaying: false, hasEnded: true, progress: 1 });
       });
 
@@ -147,6 +161,8 @@ export class AudioController {
     const dur = this.audio.duration || this.state.duration;
     const clamped = Math.max(0, Math.min(seconds, dur));
     this.audio.currentTime = clamped;
+    this.lastSyncTime = typeof performance !== "undefined" ? performance.now() : Date.now();
+    this.lastAudioTime = clamped;
     this.updateState({
       currentTime: clamped,
       progress: dur > 0 ? clamped / dur : 0,
@@ -179,6 +195,17 @@ export class AudioController {
 
   public getCurrentTime(): number {
     return this.audio ? this.audio.currentTime : this.state.currentTime;
+  }
+
+  public getContinuousTime(): number {
+    if (!this.audio) return this.state.currentTime;
+    if (!this.state.isPlaying) return this.audio.currentTime;
+
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const elapsed = Math.max(0, (now - this.lastSyncTime) / 1000);
+    const estimated = this.lastAudioTime + elapsed;
+    const dur = this.audio.duration || this.state.duration || 1;
+    return Math.min(dur, Math.max(0, estimated));
   }
 
   public getProgress(): number {
