@@ -94,7 +94,7 @@ A cinematic, emotional, and interactive 3D graduation memory website built for t
 │
 ├── lib/
 │   ├── memory-config.ts         # Central project & batch configuration
-│   ├── asset-manifest.ts        # Generated manifest of all 135 photos
+│   ├── asset-manifest.ts        # Generated manifest of all 134 photos
 │   ├── audio-controller.ts      # HTML5 Audio engine with continuous sync
 │   ├── timeline-controller.ts   # Audio-timeline synchronization
 │   ├── texture-cache.ts         # Texture pre-warming & cache manager

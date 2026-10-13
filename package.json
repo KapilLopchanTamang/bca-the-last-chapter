@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "optimize-photos": "node scripts/optimize-photos.js"
+    "test": "node scripts/test-experience.mjs",
+    "prepare-assets": "node scripts/prepare-assets.js",
+    "optimize-photos": "node scripts/prepare-assets.js"
   },
   "dependencies": {
     "@react-three/drei": "^9.121.4",

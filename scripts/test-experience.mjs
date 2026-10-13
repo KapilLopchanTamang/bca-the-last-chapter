@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 
 console.log('--- RUNNING BCA GRADUATION SYSTEM TEST SUITE ---');
 
-// 1. Verify Audio File
+// 1. Verify Audio Files
 const audioPath = path.join(__dirname, '..', 'public', 'audio', 'farewell.mp3');
 if (!fs.existsSync(audioPath)) {
   console.error('FAIL: farewell.mp3 missing!');
@@ -15,6 +15,14 @@ if (!fs.existsSync(audioPath)) {
 }
 const audioStats = fs.statSync(audioPath);
 console.log(`PASS: Audio soundtrack verified (${(audioStats.size / 1024 / 1024).toFixed(2)} MB)`);
+
+const voiceoverPath = path.join(__dirname, '..', 'public', 'audio', 'voiceover.mp3');
+if (!fs.existsSync(voiceoverPath)) {
+  console.error('FAIL: voiceover.mp3 missing!');
+  process.exit(1);
+}
+const voiceoverStats = fs.statSync(voiceoverPath);
+console.log(`PASS: Voiceover audio verified (${(voiceoverStats.size / 1024).toFixed(1)} KB)`);
 
 // 2. Verify Manifest and Images
 const manifestPath = path.join(__dirname, '..', 'lib', 'asset-manifest.ts');
@@ -39,23 +47,27 @@ console.log(`PASS: ${memoryFiles.length} optimized photo textures and ${thumbFil
 const totalDuration = 354.6; // duration of Badal Sari
 
 const chapterTimings = [
-  { id: 'opening', startPercent: 0, endPercent: 7 },
-  { id: 'beginning', startPercent: 7, endPercent: 24 },
-  { id: 'classroom', startPercent: 24, endPercent: 46 },
-  { id: 'friendships', startPercent: 46, endPercent: 68 },
-  { id: 'journey', startPercent: 68, endPercent: 86 },
-  { id: 'final', startPercent: 86, endPercent: 95 },
-  { id: 'closing', startPercent: 95, endPercent: 100 },
+  { id: 'college', startPercent: 0, endPercent: 4.0 },
+  { id: 'corridor', startPercent: 4.0, endPercent: 7.0 },
+  { id: 'beginning', startPercent: 7.0, endPercent: 25.0 },
+  { id: 'classroom', startPercent: 25.0, endPercent: 48.0 },
+  { id: 'friendships', startPercent: 48.0, endPercent: 70.0 },
+  { id: 'journey', startPercent: 70.0, endPercent: 88.0 },
+  { id: 'final', startPercent: 88.0, endPercent: 93.0 },
+  { id: 'closing', startPercent: 93.0, endPercent: 100.0 },
 ];
 
 const checkpoints = [
-  { t: 0, expectedPhase: 'INITIAL_ENTRANCE', desc: 'Entrance at start' },
-  { t: 15, expectedPhase: 'DOOR_OPENING', desc: 'Doors opening inward' },
-  { t: 45, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'beginning', desc: 'Chapter 1: The Beginning' },
-  { t: 110, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'classroom', desc: 'Chapter 2: The Classroom' },
-  { t: 190, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'friendships', desc: 'Chapter 3: The Friendships' },
-  { t: 270, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'journey', desc: 'Chapter 4: The Journey' },
-  { t: 320, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'final', desc: 'Chapter 5: The Final Chapter' },
+  { t: 0, expectedPhase: 'COLLEGE_EXTERIOR', desc: 'College exterior establishing drone shot' },
+  { t: 8, expectedPhase: 'COLLEGE_EXTERIOR', desc: 'College exterior drone orbit' },
+  { t: 16, expectedPhase: 'COLLEGE_APPROACH', desc: 'Aerial dive toward entrance & logo' },
+  { t: 20, expectedPhase: 'COLLEGE_CORRIDOR', desc: 'Corridor flight toward Room 404' },
+  { t: 23, expectedPhase: 'DOOR_OPENING', desc: 'Classroom doors swing open' },
+  { t: 45, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'beginning', desc: 'Chapter: The Beginning' },
+  { t: 110, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'classroom', desc: 'Chapter: The Classroom' },
+  { t: 190, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'friendships', desc: 'Chapter: The Friendships' },
+  { t: 270, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'journey', desc: 'Chapter: The Journey' },
+  { t: 320, expectedPhase: 'MEMORIES_ACTIVE', expectedChapter: 'final', desc: 'Chapter: The Final Chapter' },
   { t: 342, expectedPhase: 'DOOR_CLOSING', desc: 'Doors closing smoothly' },
   { t: 354, expectedPhase: 'FINAL_GRADUATION', desc: 'Final graduation message' },
 ];
@@ -73,7 +85,7 @@ function calculateStateSim(currentTime, duration) {
     }
   }
 
-  let phase = 'INITIAL_ENTRANCE';
+  let phase = 'COLLEGE_EXTERIOR';
   let doorAngle = 0;
 
   const smootherstep = (edge0, edge1, val) => {
@@ -82,19 +94,28 @@ function calculateStateSim(currentTime, duration) {
   };
 
   if (currentTime <= 0) {
-    phase = 'INITIAL_ENTRANCE';
+    phase = 'COLLEGE_EXTERIOR';
     doorAngle = 0;
-  } else if (percent < 8) {
+  } else if (percent < 4.0) {
+    phase = 'COLLEGE_EXTERIOR';
+    doorAngle = 0;
+  } else if (percent < 5.2) {
+    phase = 'COLLEGE_APPROACH';
+    doorAngle = 0;
+  } else if (percent < 6.0) {
+    phase = 'COLLEGE_CORRIDOR';
+    doorAngle = 0;
+  } else if (percent < 7.0) {
     phase = 'DOOR_OPENING';
-    const openT = smootherstep(0, 8, percent);
-    doorAngle = openT * 1.55;
-  } else if (percent < 93) {
+    const openT = smootherstep(6.0, 6.8, percent);
+    doorAngle = openT * 1.54;
+  } else if (percent < 93.0) {
     phase = 'MEMORIES_ACTIVE';
-    doorAngle = 1.55;
-  } else if (percent < 98) {
+    doorAngle = 1.54;
+  } else if (percent < 98.0) {
     phase = 'DOOR_CLOSING';
-    const closeT = smootherstep(93, 98, percent);
-    doorAngle = (1 - closeT) * 1.55;
+    const closeT = smootherstep(94.6, 97.8, percent);
+    doorAngle = (1 - closeT) * 1.54;
   } else {
     phase = 'FINAL_GRADUATION';
     doorAngle = 0;
