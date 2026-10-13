@@ -247,7 +247,6 @@ export default function GraduationExperience() {
       {webglSupported ? (
         <div className="absolute inset-0 z-0">
           <Canvas
-            shadows
             dpr={[1, 1.5]}
             camera={{ position: [14, 5.8, 48], fov: 48, near: 0.1, far: 120 }}
             gl={{

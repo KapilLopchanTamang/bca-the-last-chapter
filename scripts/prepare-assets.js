@@ -54,16 +54,16 @@ photoFiles.forEach((file, index) => {
   const destPath = path.join(DEST_DIR, safeName);
   const thumbPath = path.join(THUMB_DIR, safeName);
 
-  // Convert/copy with sips to ensure standardized high quality JPEG at 1440px
+  // Convert/copy with sips to ensure standardized high quality JPEG at 1080px
   try {
-    execSync(`sips -s format jpeg -Z 1440 -s formatOptions 82 "${srcPath}" --out "${destPath}"`, { stdio: 'ignore' });
+    execSync(`sips -s format jpeg -Z 1080 -s formatOptions 76 "${srcPath}" --out "${destPath}"`, { stdio: 'ignore' });
   } catch (e) {
     console.warn(`Failed to process ${file} with sips, trying direct copy:`, e.message);
     fs.copyFileSync(srcPath, destPath);
   }
 
   try {
-    execSync(`sips -s format jpeg -Z 480 -s formatOptions 75 "${destPath}" --out "${thumbPath}"`, { stdio: 'ignore' });
+    execSync(`sips -s format jpeg -Z 380 -s formatOptions 65 "${destPath}" --out "${thumbPath}"`, { stdio: 'ignore' });
   } catch (e) {
     fs.copyFileSync(destPath, thumbPath);
   }

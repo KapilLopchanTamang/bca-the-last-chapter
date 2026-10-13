@@ -25,11 +25,17 @@ export function MemorySequence({ timelineState, onSelectPhoto }: MemorySequenceP
     }));
   }, []);
 
-  // Pre-warm texture cache on mount to eliminate any micro-stutters
+  // Pre-warm texture cache on mount: initial batch of thumbnails and starting photos
   useEffect(() => {
-    const urls = streamPhotos.map((s) => s.photo.src || s.photo.thumb);
-    textureCache.preloadBatch(urls, 24);
-  }, [streamPhotos]);
+    textureCache.preloadInitial(PHOTO_MANIFEST);
+  }, []);
+
+  // Smart lookahead preloading as stream progresses
+  useEffect(() => {
+    if (timelineState.liveStreamIndex >= 0) {
+      textureCache.preloadUpcoming(PHOTO_MANIFEST, timelineState.liveStreamIndex, 8);
+    }
+  }, [timelineState.liveStreamIndex]);
 
   // Pure stable rendering - every card manages its own smooth 60fps WebGL updates
   return (

@@ -12,10 +12,10 @@ interface CloudClusterData {
   initialPosition: [number, number, number];
   scale: number;
   speed: number;
+  rotSpeed: number;
   puffs: {
     offset: [number, number, number];
     scale: number;
-    rotSpeed: number;
   }[];
 }
 
@@ -46,95 +46,52 @@ export function CloudAtmosphere({ intensity = 1 }: CloudAtmosphereProps) {
     return tex;
   }, []);
 
-  // Pre-calculate natural cloud clusters (windows, floor mist, and memory corridor)
+  // Pre-calculate natural, lightweight cloud clusters
   const clusters = useMemo<CloudClusterData[]>(() => {
     const list: CloudClusterData[] = [];
 
-    // 1. Outside Window Clouds (floating outside the left windows in the open sky)
+    // 1. Outside Window Clouds
     const windowPositions: [number, number, number][] = [
       [-9.5, 3.2, -10],
-      [-9.2, 2.8, -4],
-      [-9.8, 3.5, 2],
-      [-9.4, 1.8, -7],
+      [-9.2, 2.6, -3],
+      [-9.6, 2.2, 3],
     ];
 
     windowPositions.forEach((pos, idx) => {
-      const puffs = [];
-      for (let p = 0; p < 5; p++) {
-        puffs.push({
-          offset: [
-            (Math.random() - 0.5) * 1.8,
-            (Math.random() - 0.5) * 1.2,
-            (Math.random() - 0.5) * 1.8,
-          ] as [number, number, number],
-          scale: 1.4 + Math.random() * 1.0,
-          rotSpeed: (Math.random() - 0.5) * 0.04,
-        });
-      }
+      const puffs = [
+        { offset: [0, 0, 0] as [number, number, number], scale: 2.2 },
+        { offset: [1.2, 0.4, -0.6] as [number, number, number], scale: 1.8 },
+        { offset: [-1.1, -0.3, 0.5] as [number, number, number], scale: 1.7 },
+      ];
       list.push({
         initialPosition: pos,
         scale: 1.8 + idx * 0.2,
         speed: 0.06 + idx * 0.02,
+        rotSpeed: 0.015,
         puffs,
       });
     });
 
-    // 2. Classroom Floor Mist (clouds gently rolling across the floor like a dream)
+    // 2. Classroom Floor Mist
     const floorPositions: [number, number, number][] = [
-      [-3.2, -1.75, -5],
-      [3.0, -1.75, -7],
-      [-2.5, -1.8, -11],
-      [2.8, -1.8, -14],
-      [0.0, -1.85, -9],
-      [-1.2, -1.85, -2],
-      [1.5, -1.85, 0.5], // Cloud wisp near entrance doorway
+      [-3.0, -1.8, -6],
+      [2.8, -1.8, -8],
+      [-1.5, -1.85, -12],
+      [2.0, -1.85, -14],
+      [0.0, -1.85, -2],
     ];
 
     floorPositions.forEach((pos, idx) => {
-      const puffs = [];
-      for (let p = 0; p < 4; p++) {
-        puffs.push({
-          offset: [
-            (Math.random() - 0.5) * 2.2,
-            (Math.random() - 0.5) * 0.6,
-            (Math.random() - 0.5) * 2.2,
-          ] as [number, number, number],
-          scale: 1.8 + Math.random() * 1.2,
-          rotSpeed: (Math.random() - 0.5) * 0.03,
-        });
-      }
+      const puffs = [
+        { offset: [0, 0, 0] as [number, number, number], scale: 2.4 },
+        { offset: [1.4, 0.2, 0.8] as [number, number, number], scale: 2.0 },
+        { offset: [-1.3, -0.1, -0.7] as [number, number, number], scale: 1.9 },
+      ];
       list.push({
         initialPosition: pos,
-        scale: 2.0 + (idx % 3) * 0.4,
+        scale: 2.0 + (idx % 2) * 0.3,
         speed: 0.08 + (idx % 2) * 0.03,
-        puffs,
-      });
-    });
-
-    // 3. Floating Clouds behind center stage memories (adding nostalgic dreaminess)
-    const skyPositions: [number, number, number][] = [
-      [-4.0, 1.2, -15],
-      [4.0, 1.5, -16],
-      [0.0, 2.5, -18],
-    ];
-
-    skyPositions.forEach((pos, idx) => {
-      const puffs = [];
-      for (let p = 0; p < 5; p++) {
-        puffs.push({
-          offset: [
-            (Math.random() - 0.5) * 2.5,
-            (Math.random() - 0.5) * 1.5,
-            (Math.random() - 0.5) * 2.0,
-          ] as [number, number, number],
-          scale: 2.2 + Math.random() * 1.0,
-          rotSpeed: (Math.random() - 0.5) * 0.02,
-        });
-      }
-      list.push({
-        initialPosition: pos,
-        scale: 2.4,
-        speed: 0.05,
+        rotSpeed: 0.02,
         puffs,
       });
     });
@@ -142,35 +99,26 @@ export function CloudAtmosphere({ intensity = 1 }: CloudAtmosphereProps) {
     return list;
   }, []);
 
-  // Drifting motion in useFrame
+  // Optimized cluster drift without nested puff traversal
   useFrame(({ clock }, delta) => {
     if (!groupRef.current) return;
     const t = clock.getElapsedTime();
 
-    groupRef.current.children.forEach((clusterObj, cIdx) => {
+    const children = groupRef.current.children;
+    for (let cIdx = 0; cIdx < children.length; cIdx++) {
+      const clusterObj = children[cIdx];
       const data = clusters[cIdx];
-      if (!data) return;
+      if (!data) continue;
 
-      // Slow majestic cloud drift forward along Z
       clusterObj.position.z += delta * data.speed;
-
-      // Wrap around when drifted past front threshold
       if (clusterObj.position.z > 3.5) {
         clusterObj.position.z = -20;
       }
 
-      // Gentle swaying wave
-      clusterObj.position.y = data.initialPosition[1] + Math.sin(t * 0.4 + cIdx) * 0.08;
-      clusterObj.position.x = data.initialPosition[0] + Math.cos(t * 0.3 + cIdx) * 0.06;
-
-      // Rotate individual puffs
-      clusterObj.children.forEach((puffObj, pIdx) => {
-        const puffData = data.puffs[pIdx];
-        if (puffData) {
-          puffObj.rotation.z += delta * puffData.rotSpeed;
-        }
-      });
-    });
+      clusterObj.position.y = data.initialPosition[1] + Math.sin(t * 0.35 + cIdx) * 0.06;
+      clusterObj.position.x = data.initialPosition[0] + Math.cos(t * 0.25 + cIdx) * 0.05;
+      clusterObj.rotation.z += delta * data.rotSpeed;
+    }
   });
 
   if (!cloudTexture) return null;
