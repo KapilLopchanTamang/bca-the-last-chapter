@@ -50,7 +50,7 @@ A cinematic, emotional, and interactive 3D graduation memory website built for t
 - **Mobile Touch Gestures**: Swipe left/right to skip backward/forward 6s.
 - **Auditorium Fullscreen Mode (`[F]`)**: Borderless projector mode for farewell ceremony stages.
 - **Keyboard Shortcuts (`[?]`)**: Space (Play/Pause), F (Fullscreen), M (Mute), G (Gallery), Y (Yearbook), L (Lyrics), R (Restart), ← / → (Seek ±6s).
-- **All 135 Photographs Gallery**: Filterable masonry gallery and full-screen lightbox.
+- **Batch Photographs Gallery**: Filterable masonry gallery and full-screen lightbox.
 
 ---
 
