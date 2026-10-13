@@ -1,0 +1,11 @@
+# Raw source media (all web-optimized production assets are inside /public)
+photos
+photos/**
+song
+song/**
+voice over start
+voice over start/**
+*.mp4
+*.heic
+*.HEIC
+.DS_Store
