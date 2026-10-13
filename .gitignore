@@ -35,4 +35,5 @@ next-env.d.ts
 # raw source media (preserved safe locally; web-optimized assets are in /public)
 /photos/
 /song/
+/voice over start /
 

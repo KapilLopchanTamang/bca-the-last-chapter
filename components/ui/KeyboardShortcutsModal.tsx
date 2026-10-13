@@ -13,7 +13,7 @@ const SHORTCUTS = [
   { key: "Space", desc: "Play / Pause experience" },
   { key: "F", desc: "Toggle Auditorium Fullscreen mode" },
   { key: "M", desc: "Mute / Unmute audio" },
-  { key: "G", desc: "Browse all 135 photographs" },
+  { key: "G", desc: "Browse full photograph gallery" },
   { key: "Y", desc: "Open Class Yearbook & Roster" },
   { key: "L", desc: "Toggle Badal Sari poetic subtitles" },
   { key: "R", desc: "Replay experience from beginning" },

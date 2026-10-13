@@ -22,21 +22,33 @@ export function MemoryPhoto({
 }: MemoryPhotoProps) {
   const groupRef = useRef<THREE.Group>(null);
   const frameMatRef = useRef<THREE.MeshStandardMaterial>(null);
-  const photoMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const photoMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const glowMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
   const [hovered, setHovered] = useState(false);
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
 
-  // Load texture from central cache
+  // Load high-resolution photo texture from central cache with immediate binding
   useEffect(() => {
     let isMounted = true;
-    const url = photo.thumb || photo.src;
+    const url = photo.src || photo.thumb;
     const cached = textureCache.getTexture(url, (tex) => {
-      if (isMounted) setTexture(tex);
+      if (isMounted) {
+        setTexture(tex);
+        if (photoMatRef.current) {
+          photoMatRef.current.map = tex;
+          photoMatRef.current.color.set("#ffffff");
+          photoMatRef.current.needsUpdate = true;
+        }
+      }
     });
     if (cached) {
       setTexture(cached);
+      if (photoMatRef.current) {
+        photoMatRef.current.map = cached;
+        photoMatRef.current.color.set("#ffffff");
+        photoMatRef.current.needsUpdate = true;
+      }
     }
     return () => {
       isMounted = false;
@@ -132,19 +144,39 @@ export function MemoryPhoto({
 
     // CINEMATIC STREAM MODE
     const liveStreamIndex =
-      phase === "MEMORIES_ACTIVE"
+      live.liveStreamIndex !== undefined
+        ? live.liveStreamIndex
+        : phase === "MEMORIES_ACTIVE"
         ? memoryStreamProgress * (totalPhotos - 1)
-        : 0;
+        : -1.5;
 
     const diff = index - liveStreamIndex;
 
-    // Cull photos too far away
-    if (diff > 2.6 || diff < -1.7) {
-      groupRef.current.visible = false;
+    // Fast-path cull photos out of active view window (< -1.6 or > 2.4)
+    if (diff > 2.4 || diff < -1.6) {
+      if (groupRef.current.visible) {
+        groupRef.current.visible = false;
+      }
       return;
     }
 
-    groupRef.current.visible = true;
+    if (!groupRef.current.visible) {
+      groupRef.current.visible = true;
+    }
+
+    // Check if texture became available in cache
+    if (!texture) {
+      const url = photo.src || photo.thumb;
+      const cached = textureCache.getTexture(url);
+      if (cached) {
+        setTexture(cached);
+        if (photoMatRef.current) {
+          photoMatRef.current.map = cached;
+          photoMatRef.current.color.set("#ffffff");
+          photoMatRef.current.needsUpdate = true;
+        }
+      }
+    }
 
     // Cubic smoothstep helper
     const smoothstep = (min: number, max: number, value: number) => {
@@ -163,70 +195,80 @@ export function MemoryPhoto({
 
     const side = index % 2 === 0 ? 1 : -1;
 
-    if (diff >= 0) {
-      // ENTERING FROM DEPTH TOWARDS CENTER (diff: 2.6 -> 0)
-      const u = Math.min(1, diff / 2.2);
-      // Ease-in with strong deceleration into the center
+    // DEDICATED FRONT-END HOLD RADIUS:
+    // Wide calm plateau where photo holds firmly at center stage
+    const holdRadius = 0.28;
+
+    if (diff > holdRadius) {
+      // PHASE 1: ENTERING FROM DEPTH TOWARDS CENTER (diff: 2.4 -> +0.28)
+      const u = Math.min(1, Math.max(0, (diff - holdRadius) / 2.0));
+      // Cubic smoothstep easing: continuous with zero derivative at diff = holdRadius
       const ease = u * u * (3 - 2 * u);
 
-      // Z moves from deep background (-10.5) to center stage (-2.0)
+      // Z moves smoothly from deep background (-10.5) to center stage (-2.0)
       targetZ = -2.0 - ease * 8.5;
-      // X converges from side to dead center
-      targetX = side * 1.2 * smoothstep(0.15, 2.0, diff);
-      // Scale grows from 0.48 to 1.28
+      // X converges from alternating lateral position (1.15) to dead center (0.0)
+      targetX = side * 1.15 * ease;
+      // Scale grows from 0.48 up to 1.28
       targetScale = THREE.MathUtils.lerp(1.28, 0.48, ease);
-      // Opacity fades in
-      targetOpacity = 1 - smoothstep(1.5, 2.4, diff);
-      // Entry bank tilt
-      targetRotY = -side * 0.16 * ease;
-      targetRotX = ease * 0.08;
+      // Opacity fades in smoothly from deep distance
+      targetOpacity = 1 - smoothstep(0.8, 1.9, diff);
+      // Gentle bank tilt during arrival
+      targetRotY = -side * 0.14 * ease;
+      targetRotX = ease * 0.06;
 
-      // When approaching center spotlight
-      if (diff < 0.45) {
-        glowTarget = (1 - diff / 0.45) * 0.55;
+      // Glow warms up as it nears the hold zone
+      if (diff < holdRadius + 0.35) {
+        glowTarget = (1 - (diff - holdRadius) / 0.35) * 0.55;
+      }
+    } else if (diff < -holdRadius) {
+      // PHASE 3: PASSING THROUGH PAST CAMERA (diff: -0.28 -> -1.5)
+      const w = Math.min(1, Math.max(0, (-diff - holdRadius) / 1.15));
+      const ease = w * w * (3 - 2 * w);
+
+      // Z moves forward from -2.0 to +2.4 (camera sits at Z = 0.70)
+      targetZ = -2.0 + ease * 4.4;
+      // Lateral outward parting sweep so it floats gracefully around/past camera
+      targetX = -side * 1.85 * ease;
+      // Expands gently as it nears the viewer
+      targetScale = THREE.MathUtils.lerp(1.28, 1.62, ease);
+      // Dissolves gracefully after passing front center
+      targetOpacity = 1 - smoothstep(0.25, 0.90, w);
+      // Outward parting bank angle
+      targetRotY = side * 0.18 * ease;
+      targetRotX = -ease * 0.05;
+
+      if (-diff < holdRadius + 0.35) {
+        glowTarget = (1 - (-diff - holdRadius) / 0.35) * 0.55;
       }
     } else {
-      // PASSING THROUGH PAST CAMERA (diff: 0 -> -1.7)
-      const v = Math.min(1, (-diff - 0.2) / 1.15);
-      const ease = v * v * (3 - 2 * v);
-
-      // Z travels forward from -2.0 to +2.4 (smoothly passing camera at Z = 0.7)
-      targetZ = -2.0 + ease * 4.4;
-      // Sweeps outward to side
-      targetX = -side * 2.2 * smoothstep(0.1, 1.2, -diff);
-      // Expands as it gets closer
-      targetScale = THREE.MathUtils.lerp(1.28, 1.6, ease);
-      // Dissolves gracefully
-      targetOpacity = 1 - smoothstep(0.35, 1.35, -diff);
-      // Outward bank rotation
-      targetRotY = side * 0.22 * ease;
-      targetRotX = -ease * 0.06;
-
-      if (-diff < 0.45) {
-        glowTarget = (1 - (-diff) / 0.45) * 0.55;
-      }
+      // PHASE 2: DEDICATED FRONT-END HOLD ZONE (-holdRadius <= diff <= +holdRadius)
+      // The photo stays rock-solid, calm, and prominent in front of the viewer!
+      targetZ = -2.0;
+      targetX = 0;
+      targetScale = 1.28;
+      targetOpacity = 1.0;
+      targetRotX = 0;
+      targetRotY = 0;
+      glowTarget = 0.65; // Rich golden spotlight glow!
     }
 
-    // Add organic steadycam hovering life when near center
-    const isCenterHero = Math.abs(diff) < 0.45;
-    const floatY = isCenterHero
-      ? Math.sin(t * 1.8) * 0.045
-      : Math.sin(t * 1.2) * 0.02;
-    const floatRotX = isCenterHero
-      ? Math.sin(t * 1.4) * 0.015
-      : 0;
-    const floatRotY = isCenterHero
-      ? Math.cos(t * 1.2) * 0.02
-      : 0;
-    const floatRotZ = Math.sin(t * 0.8) * 0.01;
+    // Add organic steadycam hovering life when in hold zone or near center spotlight
+    const heroProximity = Math.max(0, 1 - Math.abs(diff) / 0.65);
+    if (heroProximity > 0) {
+      const floatY = Math.sin(t * 1.4) * 0.035 * heroProximity;
+      const floatRotX = Math.sin(t * 1.1) * 0.012 * heroProximity;
+      const floatRotY = Math.cos(t * 0.9) * 0.015 * heroProximity;
+      const floatRotZ = Math.sin(t * 0.7) * 0.008 * heroProximity;
 
-    targetY += floatY;
-    targetRotX += floatRotX;
-    targetRotY += floatRotY;
+      targetY += floatY;
+      targetRotX += floatRotX;
+      targetRotY += floatRotY;
+    }
 
     if (hovered) {
-      targetScale *= 1.1;
-      glowTarget = 0.7;
+      targetScale *= 1.08;
+      glowTarget = 0.85;
     }
 
     // Responsive high-fidelity smooth damping (zero jitter!)
@@ -263,7 +305,7 @@ export function MemoryPhoto({
     );
     groupRef.current.rotation.z = THREE.MathUtils.damp(
       groupRef.current.rotation.z,
-      floatRotZ,
+      (index % 2 === 0 ? 0.01 : -0.01) + Math.sin(t * 0.6) * 0.006,
       6.5,
       delta
     );
@@ -321,14 +363,14 @@ export function MemoryPhoto({
         setHovered(false);
       }}
     >
-      {/* VINTAGE PHOTOGRAPHIC PAPER BACKING */}
+      {/* CRISP WHITE PHOTOGRAPHIC PAPER BACKING */}
       <mesh castShadow receiveShadow position={[0, -0.06, -0.015]}>
         <boxGeometry args={[frameWidth, frameHeight, 0.03]} />
         <meshStandardMaterial
           ref={frameMatRef}
-          color={hovered ? "#fffdf5" : "#f4ede0"}
-          roughness={0.5}
-          metalness={0.05}
+          color={hovered ? "#ffffff" : "#fcfaf7"}
+          roughness={0.25}
+          metalness={0.02}
           transparent
           opacity={0}
         />
@@ -345,26 +387,16 @@ export function MemoryPhoto({
         />
       </mesh>
 
-      {/* PHOTOGRAPH TEXTURE SURFACE */}
+      {/* PHOTOGRAPH TEXTURE SURFACE - CRISP TRUE COLOR WITHOUT LIGHT GLARE */}
       <mesh position={[0, 0.03, 0.005]}>
         <planeGeometry args={[baseWidth, baseHeight]} />
-        {texture ? (
-          <meshStandardMaterial
-            ref={photoMatRef}
-            map={texture}
-            roughness={0.2}
-            metalness={0.04}
-            transparent
-            opacity={0}
-          />
-        ) : (
-          <meshStandardMaterial
-            color="#212530"
-            roughness={0.8}
-            transparent
-            opacity={0}
-          />
-        )}
+        <meshBasicMaterial
+          ref={photoMatRef}
+          map={texture || undefined}
+          color={texture ? "#ffffff" : "#313848"}
+          transparent
+          opacity={0}
+        />
       </mesh>
     </group>
   );

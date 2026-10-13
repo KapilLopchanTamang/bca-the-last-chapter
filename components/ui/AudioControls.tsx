@@ -19,6 +19,7 @@ import {
 import { formatTime } from "@/lib/utils";
 import { AudioPlayerState } from "@/lib/audio-controller";
 import { MEMORY_CONFIG } from "@/lib/memory-config";
+import { PHOTO_MANIFEST } from "@/lib/asset-manifest";
 
 interface AudioControlsProps {
   audioState: AudioPlayerState;
@@ -273,7 +274,7 @@ export function AudioControls({
             <button
               onClick={onOpenGallery}
               className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 hover:bg-gold-400/20 border border-white/10 hover:border-gold-400/30 text-cream-dim hover:text-gold-200 transition-all text-[11px]"
-              title="Browse all 135 photographs (G)"
+              title={`Browse all ${PHOTO_MANIFEST.length} photographs (G)`}
             >
               <Images className="w-3.5 h-3.5 text-gold-400" />
               <span className="hidden md:inline">Photos</span>

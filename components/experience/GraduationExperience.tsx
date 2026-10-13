@@ -59,9 +59,13 @@ export default function GraduationExperience() {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  // Preload audio source on mount
+  // Preload audio and voiceover sources on mount
   useEffect(() => {
     audioController.loadSource(MEMORY_CONFIG.audio.src, MEMORY_CONFIG.audio.defaultVolume);
+    audioController.loadVoiceover(
+      MEMORY_CONFIG.audio.voiceoverSrc || "/audio/voiceover.mp3",
+      MEMORY_CONFIG.audio.voiceoverDuration || 24.68
+    );
 
     const unsubAudio = audioController.subscribe((state) => {
       setAudioState(state);

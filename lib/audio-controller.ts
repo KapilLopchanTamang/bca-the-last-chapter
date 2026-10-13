@@ -1,6 +1,8 @@
 // AUDIO CONTROLLER
-// Robust HTML5 Audio wrapper that handles autoplay restrictions, seeking,
-// volume, progress tracking, and sync without React re-render bottlenecks.
+// Robust HTML5 Audio wrapper that handles dual-track playback:
+// 1. Voiceover narration at the beginning (louder, prominent)
+// 2. Background music synchronized (ducked during narration, swells up after narration ends)
+// Handles autoplay restrictions, seeking, volume, progress tracking, and sync without React re-render bottlenecks.
 
 export type AudioStateListener = (state: AudioPlayerState) => void;
 
@@ -14,11 +16,15 @@ export interface AudioPlayerState {
   isLoaded: boolean;
   hasEnded: boolean;
   error: string | null;
+  isVoiceoverActive: boolean;
 }
 
 export class AudioController {
   private static instance: AudioController | null = null;
   private audio: HTMLAudioElement | null = null;
+  private voiceoverAudio: HTMLAudioElement | null = null;
+  private voiceoverDuration: number = 24.68; // Duration of opening voiceover in seconds
+  private duckedVolumeRatio: number = 0.28; // Background music volume ratio during voiceover
   private listeners: Set<AudioStateListener> = new Set();
   private lastSyncTime: number = 0;
   private lastAudioTime: number = 0;
@@ -32,11 +38,13 @@ export class AudioController {
     isLoaded: false,
     hasEnded: false,
     error: null,
+    isVoiceoverActive: false,
   };
 
   private constructor() {
     if (typeof window !== "undefined") {
       this.initAudio();
+      this.loadVoiceover("/audio/voiceover.mp3", 24.68);
     }
   }
 
@@ -70,9 +78,31 @@ export class AudioController {
         const dur = this.audio.duration || this.state.duration || 1;
         this.lastSyncTime = typeof performance !== "undefined" ? performance.now() : Date.now();
         this.lastAudioTime = cur;
+
+        const isVoiceoverActive = cur < this.voiceoverDuration;
+
+        // Synchronize voiceover playback state
+        if (this.voiceoverAudio) {
+          if (isVoiceoverActive) {
+            if (this.state.isPlaying && this.voiceoverAudio.paused) {
+              this.voiceoverAudio.play().catch(() => {});
+            }
+            if (Math.abs(this.voiceoverAudio.currentTime - cur) > 0.25) {
+              this.voiceoverAudio.currentTime = cur;
+            }
+          } else {
+            if (!this.voiceoverAudio.paused) {
+              this.voiceoverAudio.pause();
+            }
+          }
+        }
+
+        this.updateVolumeMix(cur);
+
         this.updateState({
           currentTime: cur,
           progress: Math.min(1, Math.max(0, cur / dur)),
+          isVoiceoverActive,
         });
       });
 
@@ -88,12 +118,18 @@ export class AudioController {
         if (this.audio) {
           this.lastAudioTime = this.audio.currentTime;
         }
+        if (this.voiceoverAudio && !this.voiceoverAudio.paused) {
+          this.voiceoverAudio.pause();
+        }
         this.updateState({ isPlaying: false });
       });
 
       this.audio.addEventListener("ended", () => {
         if (this.audio) {
           this.lastAudioTime = this.audio.duration || this.state.duration;
+        }
+        if (this.voiceoverAudio && !this.voiceoverAudio.paused) {
+          this.voiceoverAudio.pause();
         }
         this.updateState({ isPlaying: false, hasEnded: true, progress: 1 });
       });
@@ -123,12 +159,75 @@ export class AudioController {
     }
   }
 
+  public loadVoiceover(src: string = "/audio/voiceover.mp3", duration: number = 24.68) {
+    if (typeof window === "undefined") return;
+    try {
+      if (!this.voiceoverAudio) {
+        this.voiceoverAudio = new Audio();
+        this.voiceoverAudio.preload = "auto";
+        this.voiceoverAudio.crossOrigin = "anonymous";
+      }
+      this.voiceoverDuration = duration;
+      if (this.voiceoverAudio.src !== src && !this.voiceoverAudio.src.endsWith(src)) {
+        this.voiceoverAudio.src = src;
+        this.voiceoverAudio.load();
+      }
+    } catch (e) {
+      console.warn("Could not load voiceover:", e);
+    }
+  }
+
+  private updateVolumeMix(curTime?: number) {
+    if (!this.audio) return;
+    const cur = curTime !== undefined ? curTime : this.getCurrentTime();
+    const isMuted = this.state.isMuted;
+    const baseVol = this.state.volume;
+    const isVoiceoverActive = cur < this.voiceoverDuration;
+
+    // 1. Voiceover Audio Volume (Louder and prominent)
+    if (this.voiceoverAudio) {
+      if (isMuted) {
+        this.voiceoverAudio.volume = 0;
+        this.voiceoverAudio.muted = true;
+      } else {
+        this.voiceoverAudio.muted = false;
+        // Keep voiceover volume at 1.0 (crystal clear narration)
+        this.voiceoverAudio.volume = 1.0;
+      }
+    }
+
+    // 2. Background Music Volume (Ducked softly while voiceover narrates, then swells up)
+    if (isMuted) {
+      this.audio.volume = 0;
+      this.audio.muted = true;
+    } else {
+      this.audio.muted = false;
+      if (isVoiceoverActive) {
+        // Soft cinematic background level
+        this.audio.volume = baseVol * this.duckedVolumeRatio;
+      } else {
+        // Full normal music volume
+        this.audio.volume = baseVol;
+      }
+    }
+  }
+
   public async play(): Promise<boolean> {
     if (!this.audio) this.initAudio();
     if (!this.audio) return false;
 
     try {
-      await this.audio.play();
+      this.updateVolumeMix();
+      const playPromise = this.audio.play();
+
+      // Play voiceover narration if within voiceover phase (< 24.68s)
+      const cur = this.getCurrentTime();
+      if (this.voiceoverAudio && cur < this.voiceoverDuration) {
+        this.voiceoverAudio.currentTime = cur;
+        this.voiceoverAudio.play().catch((e) => console.warn("Voiceover play note:", e));
+      }
+
+      await playPromise;
       this.updateState({ isPlaying: true, error: null });
       return true;
     } catch (err: any) {
@@ -144,8 +243,11 @@ export class AudioController {
   public pause() {
     if (this.audio && !this.audio.paused) {
       this.audio.pause();
-      this.updateState({ isPlaying: false });
     }
+    if (this.voiceoverAudio && !this.voiceoverAudio.paused) {
+      this.voiceoverAudio.pause();
+    }
+    this.updateState({ isPlaying: false });
   }
 
   public togglePlay(): Promise<boolean> | void {
@@ -163,10 +265,27 @@ export class AudioController {
     this.audio.currentTime = clamped;
     this.lastSyncTime = typeof performance !== "undefined" ? performance.now() : Date.now();
     this.lastAudioTime = clamped;
+
+    const isVoiceoverActive = clamped < this.voiceoverDuration;
+
+    if (this.voiceoverAudio) {
+      if (isVoiceoverActive) {
+        this.voiceoverAudio.currentTime = clamped;
+        if (this.state.isPlaying) {
+          this.voiceoverAudio.play().catch(() => {});
+        }
+      } else {
+        this.voiceoverAudio.pause();
+      }
+    }
+
+    this.updateVolumeMix(clamped);
+
     this.updateState({
       currentTime: clamped,
       progress: dur > 0 ? clamped / dur : 0,
       hasEnded: clamped >= dur,
+      isVoiceoverActive,
     });
   }
 
@@ -182,14 +301,17 @@ export class AudioController {
 
   public toggleMute() {
     if (!this.audio) return;
-    this.audio.muted = !this.audio.muted;
-    this.updateState({ isMuted: this.audio.muted });
+    const nextMuted = !this.state.isMuted;
+    this.state.isMuted = nextMuted;
+    this.updateVolumeMix();
+    this.updateState({ isMuted: nextMuted });
   }
 
   public setVolume(vol: number) {
     if (!this.audio) return;
     const clamped = Math.max(0, Math.min(1, vol));
-    this.audio.volume = clamped;
+    this.state.volume = clamped;
+    this.updateVolumeMix();
     this.updateState({ volume: clamped, isMuted: clamped === 0 });
   }
 

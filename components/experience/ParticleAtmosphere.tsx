@@ -30,18 +30,22 @@ export function ParticleAtmosphere({ count = 500, intensity = 1 }: ParticleAtmos
 
   useFrame(({ clock }) => {
     if (!pointsRef.current) return;
-    const t = clock.getElapsedTime() * 0.2;
+    const t = clock.getElapsedTime() * 0.25;
     const posAttr = pointsRef.current.geometry.attributes.position;
     const array = posAttr.array as Float32Array;
 
+    const driftY = 0.003 * intensity;
+    const swirl1 = Math.sin(t) * 0.002;
+    const swirl2 = Math.cos(t) * 0.002;
+
     for (let i = 0; i < count; i++) {
-      // Gentle drift upward and swirling sideways
-      array[i * 3 + 1] += 0.003 * intensity;
-      array[i * 3 + 0] += Math.sin(t + i) * 0.002;
+      const idx = i * 3;
+      array[idx + 1] += driftY;
+      array[idx + 0] += (i % 2 === 0 ? swirl1 : -swirl2);
 
       // Wrap around if risen too high
-      if (array[i * 3 + 1] > 3.8) {
-        array[i * 3 + 1] = -1.8;
+      if (array[idx + 1] > 3.8) {
+        array[idx + 1] = -1.8;
       }
     }
     posAttr.needsUpdate = true;

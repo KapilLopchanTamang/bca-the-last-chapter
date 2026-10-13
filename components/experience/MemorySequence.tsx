@@ -17,27 +17,18 @@ interface StreamPhotoData {
 }
 
 export function MemorySequence({ timelineState, onSelectPhoto }: MemorySequenceProps) {
-  // Select a curated stream of prominent photos spanning all 5 chapters
+  // Complete photographic stream dynamically synchronized with PHOTO_MANIFEST
   const streamPhotos = useMemo<StreamPhotoData[]>(() => {
-    const chapters = ["beginning", "classroom", "friendships", "journey", "final"];
-    const list: StreamPhotoData[] = [];
-
-    // Distribute photos fairly from each chapter (9 per chapter = 45 total)
-    chapters.forEach((chId) => {
-      const chPhotos = PHOTO_MANIFEST.filter((p) => p.chapterId === chId);
-      const subset = chPhotos.slice(0, 9);
-      subset.forEach((p) => {
-        list.push({ photo: p, index: list.length });
-      });
-    });
-
-    return list;
+    return PHOTO_MANIFEST.map((photo, index) => ({
+      photo,
+      index,
+    }));
   }, []);
 
   // Pre-warm texture cache on mount to eliminate any micro-stutters
   useEffect(() => {
-    const urls = streamPhotos.map((s) => s.photo.thumb || s.photo.src);
-    textureCache.preloadBatch(urls);
+    const urls = streamPhotos.map((s) => s.photo.src || s.photo.thumb);
+    textureCache.preloadBatch(urls, 24);
   }, [streamPhotos]);
 
   // Pure stable rendering - every card manages its own smooth 60fps WebGL updates

@@ -14,12 +14,28 @@ console.log('Discovering photos in:', SOURCE_DIR);
 const files = fs.readdirSync(SOURCE_DIR);
 
 const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic'];
-const photoFiles = files.filter(f => {
-  const ext = path.extname(f).toLowerCase();
-  return validExtensions.includes(ext);
-});
+const photoFiles = files
+  .filter(f => {
+    if (f.startsWith('.')) return false;
+    const ext = path.extname(f).toLowerCase();
+    return validExtensions.includes(ext);
+  })
+  .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-console.log(`Found ${photoFiles.length} photo files.`);
+console.log(`Found ${photoFiles.length} valid photo files in photos/ directory.`);
+
+// Clean up any existing photo-*.jpg in DEST_DIR and THUMB_DIR to prevent zombie files
+const existingDestFiles = fs.readdirSync(DEST_DIR).filter(f => f.startsWith('photo-') && f.endsWith('.jpg'));
+const existingThumbFiles = fs.existsSync(THUMB_DIR)
+  ? fs.readdirSync(THUMB_DIR).filter(f => f.startsWith('photo-') && f.endsWith('.jpg'))
+  : [];
+
+existingDestFiles.forEach(f => {
+  try { fs.unlinkSync(path.join(DEST_DIR, f)); } catch (e) {}
+});
+existingThumbFiles.forEach(f => {
+  try { fs.unlinkSync(path.join(THUMB_DIR, f)); } catch (e) {}
+});
 
 // Chapter definitions
 const CHAPTERS = [
@@ -33,30 +49,23 @@ const CHAPTERS = [
 const photoManifest = [];
 
 photoFiles.forEach((file, index) => {
-  const ext = path.extname(file).toLowerCase();
-  const baseName = path.basename(file, path.extname(file));
-  // Safe filename
   const safeName = `photo-${String(index + 1).padStart(3, '0')}.jpg`;
   const srcPath = path.join(SOURCE_DIR, file);
   const destPath = path.join(DEST_DIR, safeName);
   const thumbPath = path.join(THUMB_DIR, safeName);
 
-  // Convert/copy with sips if needed
-  if (!fs.existsSync(destPath)) {
-    try {
-      execSync(`sips -s format jpeg -Z 1440 -s formatOptions 82 "${srcPath}" --out "${destPath}"`, { stdio: 'ignore' });
-    } catch (e) {
-      console.warn(`Failed to process ${file} with sips, trying direct copy:`, e.message);
-      fs.copyFileSync(srcPath, destPath);
-    }
+  // Convert/copy with sips to ensure standardized high quality JPEG at 1440px
+  try {
+    execSync(`sips -s format jpeg -Z 1440 -s formatOptions 82 "${srcPath}" --out "${destPath}"`, { stdio: 'ignore' });
+  } catch (e) {
+    console.warn(`Failed to process ${file} with sips, trying direct copy:`, e.message);
+    fs.copyFileSync(srcPath, destPath);
   }
 
-  if (!fs.existsSync(thumbPath)) {
-    try {
-      execSync(`sips -s format jpeg -Z 480 -s formatOptions 75 "${destPath}" --out "${thumbPath}"`, { stdio: 'ignore' });
-    } catch (e) {
-      fs.copyFileSync(destPath, thumbPath);
-    }
+  try {
+    execSync(`sips -s format jpeg -Z 480 -s formatOptions 75 "${destPath}" --out "${thumbPath}"`, { stdio: 'ignore' });
+  } catch (e) {
+    fs.copyFileSync(destPath, thumbPath);
   }
 
   // Get dimensions using sips
@@ -123,4 +132,4 @@ export const PHOTO_MANIFEST: PhotoAsset[] = ${JSON.stringify(photoManifest, null
 `;
 
 fs.writeFileSync(MANIFEST_PATH, tsContent, 'utf-8');
-console.log(`Generated manifest at: ${MANIFEST_PATH}`);
+console.log(`Generated manifest with ${photoManifest.length} photos at: ${MANIFEST_PATH}`);

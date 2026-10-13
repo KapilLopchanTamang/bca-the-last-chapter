@@ -38,9 +38,12 @@ export interface MemoryProjectConfig {
   // Audio track configuration
   audio: {
     src: string;
+    voiceoverSrc?: string;
     title: string;
     artist: string;
     defaultVolume: number;
+    duckedVolumeRatio?: number;
+    voiceoverDuration?: number;
   };
 
   // Chapter timeline progression (normalized to audio duration)
@@ -92,68 +95,71 @@ export const MEMORY_CONFIG: MemoryProjectConfig = {
 
   audio: {
     src: "/audio/farewell.mp3",
+    voiceoverSrc: "/audio/voiceover.mp3",
     title: "Badal Sari",
     artist: "BCA Farewell Soundtrack",
     defaultVolume: 0.85,
+    duckedVolumeRatio: 0.28,
+    voiceoverDuration: 24.68,
   },
 
-  // Chapter timings synchronized with total track duration
+  // Chapter timings synchronized with voiceover duration (~7.0%) and song progression
   chapterTimings: [
     {
       id: "college",
       title: "Itahari Namuna College",
       subtitle: "Where our journey began",
       startPercent: 0,
-      endPercent: 8,
+      endPercent: 4.0,
     },
     {
       id: "corridor",
-      title: "Entering Campus",
+      title: "Entering Room 404",
       subtitle: "Walking through the familiar halls one last time",
-      startPercent: 8,
-      endPercent: 14.5,
+      startPercent: 4.0,
+      endPercent: 7.0,
     },
     {
       id: "beginning",
       title: "The Beginning",
       subtitle: "Every journey begins somewhere",
-      startPercent: 14.5,
-      endPercent: 30,
+      startPercent: 7.0,
+      endPercent: 25.0,
     },
     {
       id: "classroom",
       title: "The Classroom",
       subtitle: "More than lectures. More than code.",
-      startPercent: 30,
-      endPercent: 50,
+      startPercent: 25.0,
+      endPercent: 48.0,
     },
     {
       id: "friendships",
       title: "The Friendships",
       subtitle: "Some classmates became lifelong family",
-      startPercent: 50,
-      endPercent: 70,
+      startPercent: 48.0,
+      endPercent: 70.0,
     },
     {
       id: "journey",
       title: "The Journey",
       subtitle: "We learned. We built. We grew.",
-      startPercent: 70,
-      endPercent: 86,
+      startPercent: 70.0,
+      endPercent: 88.0,
     },
     {
       id: "final",
       title: "The Final Chapter",
       subtitle: "Different paths. One unforgettable story.",
-      startPercent: 86,
-      endPercent: 94,
+      startPercent: 88.0,
+      endPercent: 93.0,
     },
     {
       id: "closing",
       title: "Forever Memories",
       subtitle: "The doors close, the memories remain",
-      startPercent: 94,
-      endPercent: 100,
+      startPercent: 93.0,
+      endPercent: 100.0,
     },
   ],
 

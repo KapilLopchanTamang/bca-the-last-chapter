@@ -46,8 +46,8 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
     const percent = progress * 100;
 
     if (phase === "COLLEGE_EXTERIOR") {
-      // SCENE 1 & 2: WIDE ESTABLISHING SHOT & DRONE ORBIT (0% to 8%)
-      if (percent < 4.0) {
+      // SCENE 1 & 2: WIDE ESTABLISHING SHOT & ROTATING DRONE ORBIT (0% to 4.0%)
+      if (percent < 1.8) {
         // Shot A: Wide Establishing View of Itahari Namuna College Building & Logo
         const driftX = Math.sin(t * 0.35) * 0.35;
         const driftY = Math.cos(t * 0.4) * 0.2;
@@ -59,8 +59,8 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
         targetLookY = 5.0;
         targetLookZ = 16;
       } else {
-        // Shot B: Graceful Drone Orbit around the front three-quarters
-        const orbitT = smootherstep(4.0, 8.0, percent);
+        // Shot B: Graceful Rotating Drone Orbit around the front three-quarters
+        const orbitT = smootherstep(1.8, 4.0, percent);
 
         // Curving arc from [14, 5.8, 48] to [3.5, 3.2, 28]
         const arcBow = Math.sin(orbitT * Math.PI) * 1.8;
@@ -74,8 +74,8 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
         targetLookZ = 16;
       }
     } else if (phase === "COLLEGE_APPROACH") {
-      // SCENE 3: AERIAL DIVE TOWARD CENTRAL ENTRANCE & LOGO (8% to 11.2%)
-      const diveT = smootherstep(8.0, 11.2, percent);
+      // SCENE 3: AERIAL DIVE TOWARD CENTRAL ENTRANCE & LOGO (4.0% to 5.2%)
+      const diveT = smootherstep(4.0, 5.2, percent);
 
       // Swoops down from [3.5, 3.2, 28] to [0, 0.45, 17.5] (right in front of entrance)
       targetCamX = THREE.MathUtils.lerp(3.5, 0, diveT) + mouse.current.x * 0.2 * (1 - diveT);
@@ -87,8 +87,8 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
       targetLookY = THREE.MathUtils.lerp(3.8, 0.45, diveT);
       targetLookZ = 16;
     } else if (phase === "COLLEGE_CORRIDOR") {
-      // SCENE 3 cont: FLY THROUGH ENTRANCE INTO INTERIOR CORRIDOR (11.2% to 13.0%)
-      const corrT = smootherstep(11.2, 13.0, percent);
+      // SCENE 3 cont: FLY THROUGH ENTRANCE INTO INTERIOR CORRIDOR (5.2% to 6.0%)
+      const corrT = smootherstep(5.2, 6.0, percent);
 
       // Glides straight down the corridor from Z = 16 down to Z = 5.2
       targetCamX = mouse.current.x * 0.1 * (1 - corrT);
@@ -100,8 +100,8 @@ export function CinematicCamera({ timelineState }: CinematicCameraProps) {
       targetLookY = 0.45;
       targetLookZ = 0;
     } else if (phase === "DOOR_OPENING") {
-      // SCENE 4: ARRIVE OUTSIDE ROOM 404, DOORS OPEN, CAMERA PUSHES IN (13.0% to 14.5%)
-      const enterT = smootherstep(13.2, 14.5, percent);
+      // SCENE 4: ARRIVE OUTSIDE ROOM 404, DOORS OPEN, CAMERA PUSHES IN (6.0% to 7.0%)
+      const enterT = smootherstep(6.0, 7.0, percent);
 
       // Camera glides through opening doorway from Z = 5.2 to Z = 0.70
       targetCamX = mouse.current.x * 0.12 * (1 - enterT * 0.5);
